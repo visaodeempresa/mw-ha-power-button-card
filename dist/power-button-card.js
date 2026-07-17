@@ -455,5 +455,5 @@
     documentationURL: "https://github.com/visaodeempresa/mw-ha-power-button-card",
   });
 
-  console.info("%c MW-POWER-BUTTON-CARD %c v0.1.1 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
+  console.info("%c MW-POWER-BUTTON-CARD %c 0.1.2 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
 })();
