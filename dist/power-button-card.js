@@ -3,6 +3,7 @@
  * para um card Lovelace nativo com editor visual completo.
  * Sem build, sem dependências: JS puro + selectors nativos do HA (<ha-form>).
  * Repo: https://github.com/visaodeempresa/mw-ha-power-button-card
+ * Releases automáticas: merge na main → bump semântico → tag → HACS.
  */
 (() => {
   "use strict";
