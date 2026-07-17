@@ -27,3 +27,10 @@
   fallback = todos os sensores se nada casar.
 - Cores: seção própria com picker visual (input color + slider de alfa),
   preservando o alfa dos rgba; ha-form não derruba mais cores configuradas.
+
+## 2026-07-17 — Auto Release (DevOps)
+- `.github/workflows/auto-release.yml`: push na main (dist/hacs) → bump
+  semântico pelos commits (BREAKING=major, feat=minor, resto=patch) →
+  versão gravada no JS (commit do bot, `[skip release]`) → tag → Release
+  com asset e notas geradas → notificação HACS no HA. release.yml segue
+  como fallback p/ tag manual.
