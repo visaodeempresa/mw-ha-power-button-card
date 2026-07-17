@@ -1,0 +1,30 @@
+# Release automática (padrão pescado do fork visaodeempresa/new-floor3d-card,
+# simplificado: card sem build — sobe o dist/ direto como asset da tag).
+# Fluxo: push de tag v* → cria/atualiza a Release com o JS → HACS notifica no HA.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    name: Publish card asset
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sanity (syntax)
+        run: node --check dist/power-button-card.js
+
+      - name: Upload card to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/power-button-card.js
+          asset_name: power-button-card.js
+          tag: ${{ github.ref }}
+          overwrite: true

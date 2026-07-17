@@ -28,10 +28,10 @@ URLs dos presets (da tela do dono):
 
 ## Checklist (status vivo)
 - [x] Pasta + git + plano salvo
-- [ ] dist/power-button-card.js (card + editor)
-- [ ] hacs.json + README mínimo
-- [ ] Workflow de release (pescar do fork visaodeempresa/new-floor3d-card)
-- [ ] Repo GitHub PÚBLICO + branch feature + commits + PR
+- [x] dist/power-button-card.js (card + editor)
+- [x] hacs.json + README mínimo
+- [x] Workflow de release (pescado do fork)
+- [x] Repo GitHub PÚBLICO + feature branch + PR #1
 - [ ] Release v0.1.0 → instalar via HACS (repositório custom) → validar no HA
 
 ## Como continuar manualmente (se tokens acabarem)
