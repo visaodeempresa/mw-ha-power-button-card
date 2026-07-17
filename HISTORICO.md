@@ -18,3 +18,12 @@
 ### Pendente
 - Merge do PR (dono) → tag v0.1.0 → instalar via HACS → validar visual/editor.
 - Polimento DevOps/docs (fase 2, combinado).
+
+## 2026-07-17 — v0.1.1 (ajustes pós-teste real do dono)
+- Linhas V/A/W: `--mdc-icon-size:14px` + `gap:5px` (ícones estavam colados/
+  desalinhados — o mdc renderizava 24px por baixo).
+- Editor: sensores agora filtram por `include_entities` casando o object_id do
+  switch (switch.tomada_do_rack_tv_01 → sensor.tomada_do_rack_tv_01_*);
+  fallback = todos os sensores se nada casar.
+- Cores: seção própria com picker visual (input color + slider de alfa),
+  preservando o alfa dos rgba; ha-form não derruba mais cores configuradas.

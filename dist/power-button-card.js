@@ -145,7 +145,7 @@
         const ic = isOn ? subOn : "gold";
         const tc = isOn ? subOn : subOff;
         return `<div class="row sensor" style="grid-area:${area}" data-entity="${esc(sensorId)}">
-          <ha-icon icon="${icon}" style="width:14px;height:14px;color:${ic};"></ha-icon><span style="color:${tc};"> ${esc(st.state)} ${unit}</span></div>`;
+          <ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;color:${ic};"></ha-icon><span style="color:${tc};">${esc(st.state)} ${unit}</span></div>`;
       };
 
       // --- protocol ---
@@ -174,7 +174,8 @@
           .nm{grid-area:n;font-weight:600;font-size:14px;color:${nameColor};align-self:center;justify-self:start;
             padding-top:6px;padding-bottom:6px;white-space:normal;word-wrap:break-word;text-align:left;text-transform:none;position:relative;z-index:1;}
           .row{padding-bottom:4px;align-self:center;justify-self:start;font-size:10px;font-weight:500;position:relative;z-index:1;
-            display:inline-flex;align-items:center;}
+            display:inline-flex;align-items:center;gap:5px;}
+          .row ha-icon{flex:none;line-height:0;display:flex;align-items:center;}
           .row.sensor{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
           .proto{position:absolute;bottom:8px;right:8px;z-index:2;pointer-events:none;line-height:0;}
           span{font-size:12px;font-weight:500;line-height:1.4;}
@@ -253,7 +254,26 @@
     color_unknown_border: "Desconhecido: borda",
   };
 
-  const colorText = (name) => ({ name, selector: { text: {} } });
+  // ---- cores: parse/compose (mantém alfa, que o design usa MUITO) ----
+  const COLOR_FIELDS = [
+    "protocol_color_on", "protocol_color_off",
+    "color_on_bg", "color_on_border", "color_on_name", "color_on_subtext",
+    "color_off_bg", "color_off_border", "color_off_name", "color_off_subtext",
+    "color_unavail_bg", "color_unavail_border", "color_unknown_bg", "color_unknown_border",
+  ];
+  const parseColor = (str) => {
+    const s = String(str || "").trim();
+    let m = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i);
+    if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+    m = s.match(/^#([0-9a-f]{6})$/i);
+    if (m) { const n = parseInt(m[1], 16); return { r: n >> 16, g: (n >> 8) & 255, b: n & 255, a: 1 }; }
+    m = s.match(/^#([0-9a-f]{3})$/i);
+    if (m) { const [r, g, b] = m[1].split("").map((c) => parseInt(c + c, 16)); return { r, g, b, a: 1 }; }
+    return { r: 128, g: 128, b: 128, a: 1 };
+  };
+  const toHex = ({ r, g, b }) =>
+    "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  const toRgba = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
 
   class PowerButtonCardEditor extends HTMLElement {
     setConfig(config) {
@@ -272,7 +292,21 @@
       return url ? "custom" : "none";
     }
 
+    // Sensores: prioriza entidades cujo object_id casa com o do switch
+    // (switch.tomada_do_rack_tv_01 → sensor.tomada_do_rack_tv_01_*).
+    _sensorSel() {
+      const ent = this._config?.entity;
+      if (ent && this._hass) {
+        const base = ent.split(".")[1];
+        const list = Object.keys(this._hass.states)
+          .filter((e) => e.startsWith("sensor.") && e.split(".")[1].startsWith(base));
+        if (list.length) return { entity: { include_entities: list } };
+      }
+      return { entity: { domain: "sensor" } };
+    }
+
     _schema(preset) {
+      const sensorSel = this._sensorSel();
       const s = [
         { name: "entity", required: true, selector: { entity: { domain: "switch" } } },
         { name: "name", selector: { text: {} } },
@@ -296,9 +330,9 @@
       if (preset === "custom") s.push({ name: "background_image_url", selector: { text: {} } });
       s.push(
         { name: "background_transparent", selector: { number: { min: 0, max: 1, step: 0.005, mode: "box" } } },
-        { name: "sensor_voltagem", selector: { entity: { domain: "sensor" } } },
-        { name: "sensor_corrente", selector: { entity: { domain: "sensor" } } },
-        { name: "sensor_potencia", selector: { entity: { domain: "sensor" } } },
+        { name: "sensor_voltagem", selector: sensorSel },
+        { name: "sensor_corrente", selector: sensorSel },
+        { name: "sensor_potencia", selector: sensorSel },
         { name: "animate", selector: { boolean: {} } },
         { name: "control", selector: { boolean: {} } },
         {
@@ -316,20 +350,55 @@
             },
           },
         },
-        colorText("protocol_color_on"), colorText("protocol_color_off"),
-        {
-          name: "cores_avancadas", type: "expandable", title: "Cores avançadas (rgba/hex)",
-          schema: [
-            colorText("color_on_bg"), colorText("color_on_border"),
-            colorText("color_on_name"), colorText("color_on_subtext"),
-            colorText("color_off_bg"), colorText("color_off_border"),
-            colorText("color_off_name"), colorText("color_off_subtext"),
-            colorText("color_unavail_bg"), colorText("color_unavail_border"),
-            colorText("color_unknown_bg"), colorText("color_unknown_border"),
-          ],
-        },
       );
       return s;
+    }
+
+    // Seção «Cores» com picker visual (cor + alfa) — mantém alfa do rgba.
+    _renderColors() {
+      if (!this._colorsEl) {
+        this._colorsEl = document.createElement("details");
+        this._colorsEl.style.cssText = "margin-top:16px;border:1px solid var(--divider-color);border-radius:8px;padding:8px 12px;";
+        this.appendChild(this._colorsEl);
+      }
+      const rows = COLOR_FIELDS.map((name) => {
+        const cur = this._config[name] ?? DEFAULTS[name] ?? "";
+        const c = parseColor(cur || "rgba(128,128,128,1)");
+        return `<div class="pbc-crow" data-name="${name}">
+          <span class="lbl">${LABELS[name] || name}</span>
+          <input type="color" value="${toHex(c)}" title="cor">
+          <input type="range" min="0" max="1" step="0.01" value="${c.a}" title="transparência (alfa)">
+          <code>${cur || "—"}</code>
+        </div>`;
+      }).join("");
+      this._colorsEl.innerHTML = `
+        <summary style="cursor:pointer;font-weight:500;">Cores (clique para ajustar — cor + transparência)</summary>
+        <style>
+          .pbc-crow{display:grid;grid-template-columns:1fr 44px 110px minmax(120px,1fr);gap:10px;align-items:center;padding:6px 0;}
+          .pbc-crow .lbl{font-size:13px;}
+          .pbc-crow input[type=color]{width:40px;height:28px;border:none;background:none;cursor:pointer;padding:0;}
+          .pbc-crow code{font-size:11px;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        </style>${rows}`;
+      this._colorsEl.querySelectorAll(".pbc-crow").forEach((rowEl) => {
+        const name = rowEl.dataset.name;
+        const apply = () => {
+          const hex = rowEl.querySelector("input[type=color]").value;
+          const a = parseFloat(rowEl.querySelector("input[type=range]").value);
+          const { r, g, b } = parseColor(hex);
+          this._setKey(name, toRgba({ r, g, b, a }));
+          rowEl.querySelector("code").textContent = this._config[name];
+        };
+        rowEl.querySelector("input[type=color]").addEventListener("input", apply);
+        rowEl.querySelector("input[type=range]").addEventListener("input", apply);
+      });
+    }
+
+    _setKey(key, value) {
+      const clean = { ...this._config };
+      if (value === DEFAULTS[key]) delete clean[key]; else clean[key] = value;
+      this._config = clean;
+      this.dispatchEvent(new CustomEvent("config-changed",
+        { bubbles: true, composed: true, detail: { config: clean } }));
     }
 
     _renderForm() {
@@ -343,6 +412,7 @@
       this._form.hass = this._hass;
       this._form.schema = this._schema(preset);
       this._form.data = { ...DEFAULTS, ...this._config, __bg_preset: preset };
+      this._renderColors();
     }
 
     _onChange(ev) {
@@ -360,6 +430,10 @@
       const clean = {};
       for (const [k, val] of Object.entries(v)) {
         if (k === "entity" || k === "name" || val !== DEFAULTS[k]) clean[k] = val;
+      }
+      // cores vivem fora do ha-form — preservar as já configuradas
+      for (const k of COLOR_FIELDS) {
+        if (this._config[k] !== undefined) clean[k] = this._config[k];
       }
       this._config = clean;
       this.dispatchEvent(new CustomEvent("config-changed",
@@ -380,5 +454,5 @@
     documentationURL: "https://github.com/visaodeempresa/mw-ha-power-button-card",
   });
 
-  console.info("%c MW-POWER-BUTTON-CARD %c v0.1.0 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
+  console.info("%c MW-POWER-BUTTON-CARD %c v0.1.1 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
 })();
