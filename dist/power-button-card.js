@@ -22,6 +22,9 @@
     background_transparent: 0.12,
     animate: false,
     control: true,
+    haptic: true,
+    confirm: false,
+    confirm_text: "Tem certeza que quer {acao} {nome}?",
     protocol_icon: "",
     protocol_color_on: null,
     protocol_color_off: null,
@@ -70,6 +73,74 @@
       label: `${h[1]} · tom ${i + 1}${i === 0 ? " (mais claro)" : i === 6 ? " (mais encardido)" : ""}`,
     }))));
   // <<< paper-palette v1
+
+  // feedback táctil: o app companion (iOS/Android) escuta o evento "haptic" na
+  // window e chama o motor de vibração nativo — é assim que o próprio frontend
+  // do HA vibra. Fora do app não existe essa ponte, então cai no
+  // navigator.vibrate (funciona no Chrome do Android; o Safari do iPhone não
+  // vibra em página nenhuma, só dentro do companion).
+  const VIBRATE_MS = { selection: 5, light: 10, success: 15, medium: 20, warning: 25, heavy: 30, failure: 40 };
+  const inCompanionApp = () =>
+    !!(window.externalApp || window.webkit?.messageHandlers?.externalBus);
+  const haptic = (kind) => {
+    try {
+      window.dispatchEvent(new CustomEvent("haptic",
+        { bubbles: true, composed: true, detail: kind }));
+      // sem a ponte do companion o evento morre sem ninguém escutando
+      if (!inCompanionApp() && navigator.vibrate) navigator.vibrate(VIBRATE_MS[kind] ?? 10);
+    } catch (_) { /* vibração é enfeite: nunca pode derrubar o toque */ }
+  };
+
+  // confirmação da ação (desligada por default). Duas decisões deliberadas:
+  // 1) o diálogo é montado no document.body, não no shadow root do card —
+  //    dentro dele o overflow:hidden do botão cortaria o modal;
+  // 2) não usa window.confirm: o WebView do companion pode engolir o diálogo
+  //    nativo e devolver false sozinho, e aí a ação nunca aconteceria.
+  // O texto aceita {nome} e {acao} → "Tem certeza que quer desligar MESA?".
+  const confirmAction = (tpl, nome, acao) => new Promise((resolve) => {
+    const msg = String(tpl || DEFAULTS.confirm_text)
+      .replace(/\{nome\}/g, nome).replace(/\{acao\}/g, acao);
+    const host = document.createElement("div");
+    host.attachShadow({ mode: "open" });
+    host.shadowRoot.innerHTML = `
+      <style>
+        .ov{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+          background:rgba(0,0,0,0.55);padding:16px;}
+        .box{max-width:min(420px,86vw);border-radius:14px;padding:22px 22px 16px;
+          background:linear-gradient(145deg, #fdfaf3, #e8e3d8);color:#1a1a1a;
+          font-family:inherit;font-size:15px;line-height:1.45;text-align:center;
+          box-shadow:0 10px 40px rgba(0,0,0,0.45), inset 2px 2px 4px rgba(255,250,235,0.80);}
+        .bt{display:flex;gap:10px;margin-top:20px;}
+        button{flex:1;padding:11px 14px;border-radius:10px;font:inherit;font-size:14px;
+          font-weight:600;cursor:pointer;border:1px solid rgba(0,0,0,0.18);}
+        .no{background:rgba(0,0,0,0.06);color:#1a1a1a;}
+        .yes{background:#1a1a1a;color:#fdfaf3;border-color:#1a1a1a;}
+      </style>
+      <div class="ov"><div class="box"><div class="msg"></div>
+        <div class="bt"><button class="no">Cancelar</button><button class="yes">Confirmar</button></div>
+      </div></div>`;
+    // textContent, não innerHTML: o texto vem do YAML do dono, mas nome de
+    // entidade não tem por que virar HTML.
+    host.shadowRoot.querySelector(".msg").textContent = msg;
+    const close = (ok) => {
+      window.removeEventListener("keydown", onKey, true);
+      host.remove();
+      resolve(ok);
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Escape") { ev.stopPropagation(); close(false); }
+      else if (ev.key === "Enter") { ev.stopPropagation(); close(true); }
+    };
+    host.shadowRoot.querySelector(".yes").addEventListener("click", () => close(true));
+    host.shadowRoot.querySelector(".no").addEventListener("click", () => close(false));
+    // clique no fundo = cancelar (mesma saída do Esc)
+    host.shadowRoot.querySelector(".ov").addEventListener("click", (ev) => {
+      if (ev.target === ev.currentTarget) close(false);
+    });
+    window.addEventListener("keydown", onKey, true);
+    document.body.appendChild(host);
+    host.shadowRoot.querySelector(".yes").focus();
+  });
 
   class PowerButtonCard extends HTMLElement {
     setConfig(config) {
@@ -230,9 +301,18 @@
       const fireMoreInfo = (entityId) => this.dispatchEvent(new CustomEvent("hass-more-info",
         { bubbles: true, composed: true, detail: { entityId } }));
 
+      const buzz = c.haptic !== false;
+
       const tgl = this.shadowRoot.getElementById("pbc-toggle");
-      if (tgl) tgl.addEventListener("click", (ev) => {
+      if (tgl) tgl.addEventListener("click", async (ev) => {
         ev.stopPropagation();
+        // confirm: pergunta antes de mexer na tomada (o pointerdown da ha-card
+        // já vibrou; o clique aqui é o commit da ação)
+        if (c.confirm === true) {
+          const nome = c.name || ent?.attributes?.friendly_name || c.entity;
+          const ok = await confirmAction(c.confirm_text, nome, isOn ? "desligar" : "ligar");
+          if (!ok) return;
+        }
         this._hass.callService("switch", "toggle", { entity_id: c.entity });
       });
 
@@ -241,8 +321,16 @@
 
       const card = this.shadowRoot.querySelector("ha-card");
       let holdTimer = null;
+      // a vibração mora no pointerdown da ha-card: o toggle e as linhas de
+      // sensor ficam dentro dela, então um toque em qualquer parte do card dá
+      // retorno uma vez só (o stopPropagation deles é no click, não no press).
       card.addEventListener("pointerdown", () => {
-        holdTimer = setTimeout(() => { holdTimer = null; fireMoreInfo(c.entity); }, 500);
+        if (buzz) haptic("light");
+        holdTimer = setTimeout(() => {
+          holdTimer = null;
+          if (buzz) haptic("medium");
+          fireMoreInfo(c.entity);
+        }, 500);
       });
       ["pointerup", "pointerleave", "pointercancel"].forEach((t) =>
         card.addEventListener(t, () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } }));
@@ -264,6 +352,9 @@
     sensor_potencia: "Sensor de Potência",
     animate: "Animar ícone quando ligado (girar)",
     control: "Permitir ligar/desligar (desative p/ geladeira etc.)",
+    haptic: "Vibrar ao tocar (feedback táctil no celular)",
+    confirm: "Pedir confirmação antes de ligar/desligar",
+    confirm_text: "Mensagem da confirmação ({nome} e {acao} são substituídos)",
     protocol_icon: "Protocolo",
     protocol_color_on: "Cor do protocolo (ligado)",
     protocol_color_off: "Cor do protocolo (desligado)",
@@ -364,6 +455,11 @@
         { name: "paper_color", selector: { select: { mode: "dropdown", options: paperOptions() } } },
         { name: "animate", selector: { boolean: {} } },
         { name: "control", selector: { boolean: {} } },
+        { name: "haptic", selector: { boolean: {} } },
+        { name: "confirm", selector: { boolean: {} } },
+        // a mensagem só aparece quando a confirmação está ligada
+        ...(this._config?.confirm === true
+          ? [{ name: "confirm_text", selector: { text: {} } }] : []),
         {
           name: "protocol_icon",
           selector: {
