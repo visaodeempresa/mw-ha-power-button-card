@@ -74,6 +74,7 @@
     }))));
   // <<< paper-palette v1
 
+  // >>> touch-feedback v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/touch-feedback/touch-feedback.js
   // feedback táctil: o app companion (iOS/Android) escuta o evento "haptic" na
   // window e chama o motor de vibração nativo — é assim que o próprio frontend
   // do HA vibra. Fora do app não existe essa ponte, então cai no
@@ -97,8 +98,11 @@
   // 2) não usa window.confirm: o WebView do companion pode engolir o diálogo
   //    nativo e devolver false sozinho, e aí a ação nunca aconteceria.
   // O texto aceita {nome} e {acao} → "Tem certeza que quer desligar MESA?".
+  // O card hospedeiro oferece as chaves confirm/confirm_text; o texto de
+  // reserva mora aqui para o bloco não depender do DEFAULTS de ninguém.
+  const CONFIRM_FALLBACK = "Tem certeza que quer {acao} {nome}?";
   const confirmAction = (tpl, nome, acao) => new Promise((resolve) => {
-    const msg = String(tpl || DEFAULTS.confirm_text)
+    const msg = String(tpl || CONFIRM_FALLBACK)
       .replace(/\{nome\}/g, nome).replace(/\{acao\}/g, acao);
     const host = document.createElement("div");
     host.attachShadow({ mode: "open" });
@@ -141,6 +145,7 @@
     document.body.appendChild(host);
     host.shadowRoot.querySelector(".yes").focus();
   });
+  // <<< touch-feedback v1
 
   class PowerButtonCard extends HTMLElement {
     setConfig(config) {
