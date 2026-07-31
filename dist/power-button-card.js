@@ -40,10 +40,36 @@
     color_unavail_border: "rgba(255, 80, 80, 0.3)",
     color_unknown_bg: "rgba(0, 0, 0, 0.7)",
     color_unknown_border: "rgba(80, 80, 80, 0.3)",
+    paper_color: "paper",
   };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // >>> paper-palette v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/paper-palette/paper-palette.js
+  // 49 papéis encardidos: 7 matizes do arco-íris × 7 tons (1 = quase branco,
+  // 7 = mais encardido). Saturação baixa de propósito — papel descansa a vista.
+  const PAPER_HUES = [
+    ["red", "Vermelho", 6], ["orange", "Laranja", 27], ["yellow", "Amarelo", 47],
+    ["green", "Verde", 96], ["blue", "Azul", 203], ["indigo", "Anil", 236],
+    ["violet", "Violeta", 283],
+  ];
+  const PAPER_TONES = [[97, 6], [96, 9], [94, 12], [92, 15], [90, 18], [88, 21], [85, 24]];
+  const PAPER_DEFAULT = "linear-gradient(145deg, #fdfaf3, #e8e3d8)";
+  const paperGradient = (key) => {
+    const m = /^([a-z]+)-([1-7])$/.exec(String(key || "").trim());
+    if (!m) return PAPER_DEFAULT;
+    const hue = PAPER_HUES.find((h) => h[0] === m[1]);
+    if (!hue) return PAPER_DEFAULT;
+    const [l, s] = PAPER_TONES[+m[2] - 1];
+    return `linear-gradient(145deg, hsl(${hue[2]}, ${s}%, ${l}%), hsl(${hue[2]}, ${s + 4}%, ${l - 7}%))`;
+  };
+  const paperOptions = () => [{ value: "paper", label: "Papel original (creme)" }].concat(
+    ...PAPER_HUES.map((h) => PAPER_TONES.map((t, i) => ({
+      value: `${h[0]}-${i + 1}`,
+      label: `${h[1]} · tom ${i + 1}${i === 0 ? " (mais claro)" : i === 6 ? " (mais encardido)" : ""}`,
+    }))));
+  // <<< paper-palette v1
 
   class PowerButtonCard extends HTMLElement {
     setConfig(config) {
@@ -88,7 +114,7 @@
 
       // --- card por estado (igual ao template) ---
       let bg, border, shadow;
-      if (isOn) { bg = "linear-gradient(145deg, #fdfaf3, #e8e3d8)"; border = c.color_on_border; }
+      if (isOn) { bg = paperGradient(c.paper_color); border = c.color_on_border; }
       else if (isOff) { bg = c.color_off_bg; border = c.color_off_border; }
       else if (state === "unavailable") { bg = c.color_unavail_bg; border = c.color_unavail_border; }
       else if (state === "unknown") { bg = c.color_unknown_bg; border = c.color_unknown_border; }
@@ -241,6 +267,7 @@
     protocol_icon: "Protocolo",
     protocol_color_on: "Cor do protocolo (ligado)",
     protocol_color_off: "Cor do protocolo (desligado)",
+    paper_color: "Cor do papel (ligado)",
     color_on_bg: "Ligado: fundo",
     color_on_border: "Ligado: borda",
     color_on_name: "Ligado: nome",
@@ -334,6 +361,7 @@
         { name: "sensor_voltagem", selector: sensorSel },
         { name: "sensor_corrente", selector: sensorSel },
         { name: "sensor_potencia", selector: sensorSel },
+        { name: "paper_color", selector: { select: { mode: "dropdown", options: paperOptions() } } },
         { name: "animate", selector: { boolean: {} } },
         { name: "control", selector: { boolean: {} } },
         {

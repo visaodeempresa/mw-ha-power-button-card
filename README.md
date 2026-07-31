@@ -45,5 +45,16 @@ protocol_icon: mdi:wifi
 | `protocol_icon` | wifi/zigbee/bluetooth/z-wave | "" | selinho de protocolo |
 | `protocol_color_on` / `protocol_color_off` | cor | — | cores do selinho |
 | `color_on_*` / `color_off_*` / `color_unavail_*` / `color_unknown_*` | cor | (tema papel) | cores por estado (12 campos, seção avançada do editor) |
+| `paper_color` | `paper` ou `<cor>-<1..7>` | `paper` | cor do papel quando ligado — 49 tons encardidos (7 matizes do arco-íris × 7 tons) + o creme original |
+
+### Paleta de papel encardido (`paper_color`)
+
+`paper` = creme original (`#fdfaf3 → #e8e3d8`). As outras 49 seguem
+`<matiz>-<tom>`, com matiz em `red`, `orange`, `yellow`, `green`, `blue`,
+`indigo`, `violet` e tom de `1` (quase branco) a `7` (mais encardido) — ex.:
+`green-5`, `indigo-7`. Saturação baixa de propósito: papel encardido cansa
+menos a vista que branco puro. Mesma paleta do card irmão
+[simple-button-card](https://github.com/visaodeempresa/mw-ha-simple-button-card);
+fonte canônica em `IA/lib/paper-palette/paper-palette.js`.
 
 Interações: **hold** = more-info da tomada · toque nas linhas V/A/W = more-info do sensor · toggle liga/desliga.

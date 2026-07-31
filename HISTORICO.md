@@ -1,5 +1,16 @@
 # HISTÓRICO — mw-ha-power-button-card
 
+
+## 2026-07-31 — paleta de papel encardido (feature/paper-palette)
+- `paper_color`: 49 tons de papel encardido (7 matizes do arco-íris × 7 tons,
+  HSL com saturação 6–24% e luminosidade 97→85) + o creme original `paper`.
+  Bloco `paper-palette v1` embutido entre marcadores, idêntico ao do
+  simple-button-card; fonte canônica em `IA/lib/paper-palette/`.
+  Verificação: `IA/tools/check-embeds.sh`.
+- Corrigido o mesmo bug do irmão no `auto-release.yml`: o `sed` procurava
+  `%c v0.1.2` e o banner nunca teve o `v` — a versão dentro do JS nunca era
+  sincronizada. Agora casa e o job falha se não sincronizar.
+
 ## 2026-07-17 — v0.1.0 (sessão inicial, Claude)
 - Plano salvo (PLANO.md) e commitado antes do código.
 - `dist/power-button-card.js`: port fiel do template `tomada_energia_papel_v6`
