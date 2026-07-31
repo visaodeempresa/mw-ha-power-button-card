@@ -52,7 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           NEXT=${{ steps.ver.outputs.next }}
-          sed -i -E "s/%c v[0-9]+\.[0-9]+\.[0-9]+ /%c ${NEXT#v} /" dist/power-button-card.js
+          # o banner do card é "%c 0.1.2 " (sem o "v") — v? evita o no-op silencioso
+          sed -i -E "s/%c v?[0-9]+\.[0-9]+\.[0-9]+ /%c ${NEXT#v} /" dist/power-button-card.js
+          grep -q "%c ${NEXT#v} " dist/power-button-card.js
           node --check dist/power-button-card.js
 
       - name: Commit version bump
