@@ -1,5 +1,18 @@
 # HISTÓRICO — mw-ha-power-button-card
 
+## 2026-07-31 — bloco `touch-feedback v1` (compartilhado)
+- `haptic()` + `confirmAction()` saíram de código solto e viraram bloco entre
+  marcadores `>>> touch-feedback v1` / `<<< touch-feedback v1`, mesmo regime da
+  paper-palette: fonte canônica em `IA/lib/touch-feedback/touch-feedback.js`,
+  cópia idêntica nos dois cards, conferida por `IA/tools/check-embeds.sh`.
+- Única mudança de código: o bloco lia `DEFAULTS.confirm_text` do card
+  hospedeiro. Agora carrega o próprio `CONFIRM_FALLBACK` e não depende de nada
+  de fora — o card só precisa oferecer as chaves `haptic`/`confirm`/
+  `confirm_text`. Comportamento idêntico (o `DEFAULTS.confirm_text` segue
+  sendo o que chega em `tpl`; a reserva só entra se o texto vier vazio).
+- Nenhuma propriedade nova, nenhuma mudança visual: propriedades intactas.
+  Probe em jsdom rodado de novo nos dois cards, 13 checks cada.
+
 ## 2026-07-31 — feedback táctil + confirmação (feature/haptic-and-confirmation)
 - `haptic` (default `true`): pulso `light` no `pointerdown` da `ha-card` e
   `medium` quando o hold de 500 ms vira more-info. A vibração fica na
