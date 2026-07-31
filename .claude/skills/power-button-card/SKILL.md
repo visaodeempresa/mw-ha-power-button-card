@@ -59,6 +59,7 @@ e o banner nunca teve o `v`, então era no-op silencioso).
 |---|---|
 | "HACS não mostra versão nova" | commit em feature branch; release só na `main` |
 | `curl` novo, tela velha | `.js.gz` antigo ainda servido |
+| "Mergeei e a feature não apareceu na release" | commits empurrados para a branch depois do merge do PR — órfãos, sem PR | branch nova a cada lote |
 | Linhas V/A/W somem | `sensor_*` apontando para entidade inexistente — `_st()` devolve null |
 | Paleta divergindo do card irmão | editaram o bloco embutido; rodar `IA/tools/check-embeds.sh --fix` |
 
