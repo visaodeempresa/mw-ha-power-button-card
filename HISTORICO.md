@@ -1,5 +1,24 @@
 # HISTÓRICO — mw-ha-power-button-card
 
+## 2026-07-31 — feedback táctil + confirmação (feature/haptic-and-confirmation)
+- `haptic` (default `true`): pulso `light` no `pointerdown` da `ha-card` e
+  `medium` quando o hold de 500 ms vira more-info. A vibração fica na
+  `ha-card` de propósito — o toggle e as linhas de sensor estão dentro dela e
+  só param a propagação do `click`, não do press, então um toque em qualquer
+  parte do card dá retorno uma vez só.
+- Ponte: evento `haptic` na `window` (mesmo canal que o frontend do HA usa
+  para falar com o app companion); fora do companion cai no
+  `navigator.vibrate`, dentro não — senão vibraria duas vezes.
+- `confirm` (default `false`) + `confirm_text` já sugerido
+  (`Tem certeza que quer {acao} {nome}?`): pergunta antes de mexer na tomada.
+  Diálogo próprio no `document.body` (dentro do shadow root o card cortaria o
+  modal) e **não** `window.confirm`, que o WebView do companion pode engolir.
+  Fecha por Confirmar/Cancelar, Esc, Enter ou clique no fundo.
+- O bloco `haptic` + `confirmAction` é **byte a byte igual** ao do
+  simple-button-card — candidato a virar bloco compartilhado em `IA/lib/`,
+  como a paper-palette.
+- Probe em jsdom: 13 checks + hold (light/medium, more-info, sem toggle).
+
 
 ## 2026-07-31 — paleta de papel encardido (feature/paper-palette)
 - `paper_color`: 49 tons de papel encardido (7 matizes do arco-íris × 7 tons,

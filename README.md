@@ -42,6 +42,9 @@ protocol_icon: mdi:wifi
 | `sensor_voltagem` / `sensor_corrente` / `sensor_potencia` | sensor | "" | linhas V/A/W (clicáveis → more-info) |
 | `animate` | bool | false | gira o ícone quando ligado |
 | `control` | bool | true | false = toggle travado (ex.: geladeira) |
+| `haptic` | bool | `true` | vibra ao encostar no card (pulso curto no toque, mais forte quando o hold vira more-info); no app companion usa o motor nativo, no navegador cai no `navigator.vibrate` — o Safari do iPhone não vibra fora do app |
+| `confirm` | bool | `false` | pergunta antes de ligar/desligar a tomada; o hold/more-info e as linhas de sensor não pedem nada |
+| `confirm_text` | texto | `Tem certeza que quer {acao} {nome}?` | mensagem da confirmação — `{nome}` vira o nome (ou o `friendly_name`) e `{acao}` vira *ligar*/*desligar* conforme o estado |
 | `protocol_icon` | wifi/zigbee/bluetooth/z-wave | "" | selinho de protocolo |
 | `protocol_color_on` / `protocol_color_off` | cor | — | cores do selinho |
 | `color_on_*` / `color_off_*` / `color_unavail_*` / `color_unknown_*` | cor | (tema papel) | cores por estado (12 campos, seção avançada do editor) |
