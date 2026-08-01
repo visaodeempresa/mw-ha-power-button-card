@@ -56,6 +56,7 @@ jobs:
           sed -i -E "s/%c v?[0-9]+\.[0-9]+\.[0-9]+ /%c ${NEXT#v} /" dist/power-button-card.js
           grep -q "%c ${NEXT#v} " dist/power-button-card.js
           node --check dist/power-button-card.js
+          node tools/probe.js
 
       - name: Commit version bump
         run: |

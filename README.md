@@ -39,7 +39,10 @@ protocol_icon: mdi:wifi
 | `image_url` | URL | "" | imagem do aparelho (substitui o ícone) |
 | `background_image_url` | URL | "" | marca d'água (editor: Tuya/Tapo/Custom) |
 | `background_transparent` | 0–1 | 0.12 | opacidade da marca d'água |
-| `sensor_voltagem` / `sensor_corrente` / `sensor_potencia` | sensor | "" | linhas V/A/W (clicáveis → more-info) |
+| `sensor_voltagem` / `sensor_corrente` / `sensor_potencia` | sensor | "" | linhas V/A/W (clicáveis → more-info). No editor, os três selects mostram **só os sensores da tomada selecionada** |
+| `only_power` | bool | false | **Somente Potência**: esconde corrente e tensão e mostra a potência em número grande |
+| `power_font_size` | px | 34 | tamanho do número no modo Somente Potência (o ícone e a unidade acompanham) |
+| `color_power_on` / `color_power_off` | cor | `#7a4b00` / `#f0b429` | cor do número grande com a tomada ligada / desligada |
 | `animate` | bool | false | gira o ícone quando ligado |
 | `control` | bool | true | false = toggle travado (ex.: geladeira) |
 | `protocol_icon` | wifi/zigbee/bluetooth/z-wave | "" | selinho de protocolo |
@@ -57,4 +60,40 @@ menos a vista que branco puro. Mesma paleta do card irmão
 [simple-button-card](https://github.com/visaodeempresa/mw-ha-simple-button-card);
 fonte canônica em `IA/lib/paper-palette/paper-palette.js`.
 
-Interações: **hold** = more-info da tomada · toque nas linhas V/A/W = more-info do sensor · toggle liga/desliga.
+### Somente Potência (`only_power`)
+
+```yaml
+type: custom:power-button-card
+entity: switch.tomada_do_rack_tv_01
+sensor_potencia: sensor.tomada_do_rack_tv_01_potencia
+only_power: true
+power_font_size: 40      # opcional
+```
+
+Some com as linhas de corrente e tensão e desenha a potência em destaque:
+**no máximo 1 casa decimal** e **no máximo 4 dígitos** na parte inteira —
+passou de `9999`, o número sobe de degrau (`12345 W` vira `12,3 kW`) em vez de
+esticar e estourar a largura do card. O número usa `tabular-nums`, então não
+"dança" a cada leitura do sensor, e a unidade fica menor, ao lado.
+
+As cores padrão foram escolhidas para o papel: âmbar escuro (`#7a4b00`) sobre
+o creme quando ligada — legível e no mesmo tom quente do card — e âmbar claro
+(`#f0b429`) quando desligada, harmonizando com o dourado que os ícones já usam
+nesse estado. As duas ficam na seção **Cores** do editor.
+
+Com o flag ligado, o editor também esconde os selects de tensão e corrente —
+mas **não apaga** o que estava configurado: desligar o flag traz as duas linhas
+de volta como estavam.
+
+Interações: **hold** = more-info da tomada · toque nas linhas V/A/W (ou no
+número grande) = more-info do sensor · toggle liga/desliga.
+
+## Desenvolvimento
+
+```bash
+node --check dist/power-button-card.js && node tools/probe.js
+```
+
+O probe instancia card e editor fora do navegador (24 verificações: grade,
+formatação da potência, filtro dos selects, defaults fora do YAML) e roda no
+CI antes de qualquer release.
