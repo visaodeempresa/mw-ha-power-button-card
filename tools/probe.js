@@ -175,5 +175,47 @@ check("sensores escondidos continuam no YAML",
   out.sensor_corrente === "sensor.tomada_rack_corrente", JSON.stringify(out));
 check("defaults fora do YAML", out.power_font_size === undefined && out.animate === undefined);
 
+console.log("ajuste fino:");
+const lifted = mk({ ...base, only_power: true });
+check("nome e potência sobem 6px por padrão",
+  (lifted.match(/transform:translateY\(-6px\)/g) || []).length === 2, lifted.slice(-500));
+check("lift 0 não deixa transform sobrando",
+  !mk({ ...base, only_power: true, only_power_lift: 0 }).includes("translateY"));
+check("lift configurável", mk({ ...base, only_power: true, only_power_lift: 14 })
+  .includes("transform:translateY(-14px)"));
+check("sem only_power ninguém sobe", !mk(base).includes("translateY"));
+
+const proto = mk({ ...base, protocol_icon: "mdi:zigbee" });
+check("selinho 10px das bordas por padrão", proto.includes("bottom:10px;right:10px"));
+check("deslocamento do selinho configurável",
+  mk({ ...base, protocol_icon: "mdi:zigbee", protocol_offset_x: 16, protocol_offset_y: 20 })
+    .includes("bottom:20px;right:16px"));
+check("selinho pode sair para fora (negativo)",
+  mk({ ...base, protocol_icon: "mdi:zigbee", protocol_offset_x: -4 }).includes("right:-4px"));
+check("cor do protocolo ligada agora vale",
+  mk({ ...base, protocol_icon: "mdi:zigbee", protocol_color_on: "#8e24aa" }).includes("#8e24aa"));
+check("sem cor própria, mantém a do template",
+  proto.includes("rgba(20, 20, 20, 0.72)"));
+const protoOff = new reg["power-button-card"]();
+protoOff.setConfig({ ...base, protocol_icon: "mdi:zigbee", protocol_color_off: "#90caf9" });
+protoOff.hass = { ...hass, states: { ...hass.states, "switch.tomada_rack": { state: "off", attributes: {} } } };
+check("cor do protocolo desligada continua valendo",
+  protoOff.shadowRoot.innerHTML.includes("#90caf9"));
+
+const edFine = new reg["power-button-card-editor"]();
+edFine.hass = hass;
+edFine.setConfig({ ...base, only_power: true, protocol_icon: "mdi:zigbee" });
+const fineSchema = edFine._schema("none");
+check("campo de subida aparece com only_power", !!byName(fineSchema, "only_power_lift"));
+check("campos de deslocamento aparecem com protocolo",
+  !!byName(fineSchema, "protocol_offset_x") && !!byName(fineSchema, "protocol_offset_y"));
+const edNoProto = new reg["power-button-card-editor"]();
+edNoProto.hass = hass;
+edNoProto.setConfig(base);
+check("sem protocolo, sem campos de deslocamento",
+  !byName(edNoProto._schema("none"), "protocol_offset_x"));
+check("sem only_power, sem campo de subida",
+  !byName(edNoProto._schema("none"), "only_power_lift"));
+
 console.log(fails ? `\n${fails} verificação(ões) falharam` : "\ntudo ok");
 process.exit(fails ? 1 : 0);

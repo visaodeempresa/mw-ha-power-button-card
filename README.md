@@ -48,8 +48,10 @@ protocol_icon: mdi:wifi
 | `haptic` | bool | `true` | vibra ao encostar no card (pulso curto no toque, mais forte quando o hold vira more-info); no app companion usa o motor nativo, no navegador cai no `navigator.vibrate` — o Safari do iPhone não vibra fora do app |
 | `confirm` | bool | `false` | pergunta antes de ligar/desligar a tomada; o hold/more-info e as linhas de sensor não pedem nada |
 | `confirm_text` | texto | `Tem certeza que quer {acao} {nome}?` | mensagem da confirmação — `{nome}` vira o nome (ou o `friendly_name`) e `{acao}` vira *ligar*/*desligar* conforme o estado |
+| `only_power_lift` | px | 6 | sobe o nome e a potência no modo Somente Potência (negativo desce) |
 | `protocol_icon` | wifi/zigbee/bluetooth/z-wave | "" | selinho de protocolo |
-| `protocol_color_on` / `protocol_color_off` | cor | — | cores do selinho |
+| `protocol_color_on` / `protocol_color_off` | cor | (do tema) | cores do selinho — vazio usa o par do template |
+| `protocol_offset_x` / `protocol_offset_y` | px | 10 / 10 | distância do selinho até a borda direita / inferior; **aumentar empurra para dentro** (esquerda e cima), negativo joga para fora |
 | `color_on_*` / `color_off_*` / `color_unavail_*` / `color_unknown_*` | cor | (tema papel) | cores por estado (12 campos, seção avançada do editor) |
 | `paper_color` | `paper` ou `<cor>-<1..7>` | `paper` | cor do papel quando ligado — 49 tons encardidos (7 matizes do arco-íris × 7 tons) + o creme original |
 
@@ -84,9 +86,24 @@ o creme quando ligada — legível e no mesmo tom quente do card — e âmbar cl
 (`#f0b429`) quando desligada, harmonizando com o dourado que os ícones já usam
 nesse estado. As duas ficam na seção **Cores** do editor.
 
+Sem as linhas de V/A o bloco sobra baixo no card, então nome e potência sobem
+`only_power_lift` px (6 por padrão, campo aberto no editor — negativo desce).
+A subida é `transform`, não margem: não mexe na grade nem no tamanho do número.
+
 Com o flag ligado, o editor também esconde os selects de tensão e corrente —
 mas **não apaga** o que estava configurado: desligar o flag traz as duas linhas
 de volta como estavam.
+
+### Selinho de protocolo
+
+`protocol_offset_x` / `protocol_offset_y` (10 px cada) medem a distância até a
+borda **direita** e **inferior** — aumentar empurra o ícone para dentro do
+card, diminuir (ou usar negativo) joga para fora. Os dois campos aparecem no
+editor assim que um protocolo é escolhido.
+
+`protocol_color_on` e `protocol_color_off` agora pintam de verdade: vazias,
+valem as do template original (grafite sobre o papel, branco apagado no
+desligado); preenchidas na seção **Cores**, mandam elas.
 
 Interações: **hold** = more-info da tomada · toque nas linhas V/A/W (ou no
 número grande) = more-info do sensor · toggle liga/desliga.

@@ -65,6 +65,9 @@ e o banner nunca teve o `v`, então era no-op silencioso).
 | Sensor configurado sumiu do YAML sozinho | `_onChange` monta o config só com o que está no `ha-form`; campo escondido pelo esquema (ex.: tensão com `only_power` ligado) não vem no evento — o loop de preservação em `_onChange` existe por isso, não remover |
 | Select de V/A/W listando a casa inteira | `_sensorSel()` sem `hass` (chegou depois do `setConfig`) — o `set hass` reconstrói o esquema justamente para isso |
 | Número da potência "dançando" a cada leitura | fonte sem `tabular-nums` |
+| Cor do protocolo "não funciona" | até a v0.4.0 o render ignorava `protocol_color_on` e usava grafite fixo — corrigido; se voltar a não valer, é regressão aqui |
+| Selinho de protocolo colado no canto | `protocol_offset_x`/`_y` medem a distância até a borda direita/inferior: **aumentar empurra para dentro** |
+| Nome/potência baixos no Somente Potência | `only_power_lift` (6 px por padrão) sobe os dois; é `transform`, não margem |
 | Potência estourando a largura | acima de 9999 tem que subir de degrau (W → kW), não esticar |
 
 Commits: inglês, assinados em GPG, autoria exclusiva do dono, sem coautoria.
