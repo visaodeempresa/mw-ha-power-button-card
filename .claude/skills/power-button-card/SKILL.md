@@ -61,5 +61,9 @@ e o banner nunca teve o `v`, então era no-op silencioso).
 | `curl` novo, tela velha | `.js.gz` antigo ainda servido |
 | Linhas V/A/W somem | `sensor_*` apontando para entidade inexistente — `_st()` devolve null |
 | Paleta divergindo do card irmão | editaram o bloco embutido; rodar `IA/tools/check-embeds.sh --fix` |
+| Sensor configurado sumiu do YAML sozinho | `_onChange` monta o config só com o que está no `ha-form`; campo escondido pelo esquema (ex.: tensão com `only_power` ligado) não vem no evento — o loop de preservação em `_onChange` existe por isso, não remover |
+| Select de V/A/W listando a casa inteira | `_sensorSel()` sem `hass` (chegou depois do `setConfig`) — o `set hass` reconstrói o esquema justamente para isso |
+| Número da potência "dançando" a cada leitura | fonte sem `tabular-nums` |
+| Potência estourando a largura | acima de 9999 tem que subir de degrau (W → kW), não esticar |
 
 Commits: inglês, assinados em GPG, autoria exclusiva do dono, sem coautoria.
