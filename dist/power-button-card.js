@@ -31,6 +31,10 @@
     sensor_voltagem: "",
     sensor_corrente: "",
     sensor_potencia: "",
+    only_power: false,
+    power_font_size: 34,
+    color_power_on: "#7a4b00",
+    color_power_off: "#f0b429",
     color_on_bg: "rgba(255, 255, 255, 0.95)",
     color_on_border: "rgba(180, 180, 180, 0.55)",
     color_on_name: "#1a1a1a",
@@ -48,6 +52,29 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // Potência em destaque: no máximo 1 casa decimal e no máximo 4 dígitos na
+  // parte inteira — passou de 9999, sobe de degrau (W → kW → MW) em vez de
+  // esticar o número e estourar a largura do card.
+  const STEPS = [["W", "kW"], ["kW", "MW"], ["MW", "GW"]];
+  const fmtPower = (raw, unit, lang) => {
+    let v = Number.parseFloat(raw);
+    if (!Number.isFinite(v)) return { value: String(raw ?? "—"), unit: unit || "" };
+    let u = unit || "W";
+    const round1 = (x) => Math.round(x * 10) / 10;
+    v = round1(v);
+    for (const [from, to] of STEPS) {
+      if (Math.abs(v) >= 10000 && u.toLowerCase() === from.toLowerCase()) { v = round1(v / 1000); u = to; }
+    }
+    let value;
+    try {
+      value = new Intl.NumberFormat(lang || "pt-BR",
+        { maximumFractionDigits: 1, useGrouping: false }).format(v);
+    } catch (e) {
+      value = String(v);
+    }
+    return { value, unit: u };
+  };
 
   // >>> paper-palette v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/paper-palette/paper-palette.js
   // 49 papéis encardidos: 7 matizes do arco-íris × 7 tons (1 = quase branco,
@@ -241,6 +268,9 @@
       }
 
       // --- linhas de sensor (voltagem/corrente/potência) ---
+      const onlyPower = c.only_power === true;
+      const powerColor = isOn ? c.color_power_on : c.color_power_off;
+      const pSize = Number(c.power_font_size) || 34;
       const subOn = c.color_on_subtext, subOff = c.color_off_subtext;
       const row = (sensorId, icon, unit, area) => {
         const st = this._st(sensorId);
@@ -249,6 +279,18 @@
         const tc = isOn ? subOn : subOff;
         return `<div class="row sensor" style="grid-area:${area}" data-entity="${esc(sensorId)}">
           <ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;color:${ic};"></ha-icon><span style="color:${tc};">${esc(st.state)} ${unit}</span></div>`;
+      };
+
+      // only_power: some com corrente/tensão e a potência vira o número grande
+      const bigPower = () => {
+        const st = this._st(c.sensor_potencia);
+        if (!st) return `<div class="row" style="grid-area:power"></div>`;
+        const isz = Math.round(pSize * 0.62);
+        const { value, unit } = fmtPower(st.state, st.attributes?.unit_of_measurement,
+          this._hass?.locale?.language);
+        return `<div class="row big sensor" style="grid-area:power" data-entity="${esc(c.sensor_potencia)}">
+          <ha-icon icon="mdi:flash" style="--mdc-icon-size:${isz}px;width:${isz}px;height:${isz}px;color:${powerColor};"></ha-icon
+          ><span class="pv">${esc(value)}</span><span class="pu">${esc(unit)}</span></div>`;
       };
 
       // --- protocol ---
@@ -268,8 +310,13 @@
             border-radius:18px;padding:10%;font-size:16px;text-transform:uppercase;
             background:${bg};border:1px solid ${border};box-shadow:${shadow};height:100%;box-sizing:border-box;cursor:default;}
           .grid{display:grid;position:relative;height:100%;
-            grid-template-areas:"device_img status" "n n" "voltage voltage" "current current" "power power";
-            grid-template-columns:1fr 1fr;grid-template-rows:1fr min-content min-content min-content min-content;}
+            grid-template-areas:${onlyPower
+              ? '"device_img status" "n n" "power power"'
+              : '"device_img status" "n n" "voltage voltage" "current current" "power power"'};
+            grid-template-columns:1fr 1fr;
+            grid-template-rows:${onlyPower
+              ? "1fr min-content min-content"
+              : "1fr min-content min-content min-content min-content"};}
           .wm{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;
             background-size:60%;background-position:center center;background-repeat:no-repeat;border-radius:inherit;}
           .dev{grid-area:device_img;justify-self:start;align-self:start;position:relative;z-index:1;line-height:0;overflow:visible;}
@@ -280,6 +327,15 @@
             display:inline-flex;align-items:center;gap:5px;}
           .row ha-icon{flex:none;line-height:0;display:flex;align-items:center;}
           .row.sensor{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+          .row.big{gap:6px;align-items:baseline;padding-bottom:2px;}
+          .row.big ha-icon{align-self:center;flex:none;
+            filter:${isOn ? "drop-shadow(0 1px 0 rgba(255,255,255,0.55))" : "none"};}
+          /* tabular-nums trava a largura do dígito: o número não dança a cada leitura */
+          .row.big .pv{font-size:${pSize}px;font-weight:700;line-height:1.05;color:${powerColor};
+            font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-0.5px;
+            text-shadow:${isOn ? "0 1px 0 rgba(255,255,255,0.55)" : "none"};}
+          .row.big .pu{font-size:${Math.round(pSize * 0.4)}px;font-weight:600;color:${powerColor};
+            opacity:.72;letter-spacing:0;}
           .proto{position:absolute;bottom:8px;right:8px;z-index:2;pointer-events:none;line-height:0;}
           span{font-size:12px;font-weight:500;line-height:1.4;}
           .tgl{display:inline-flex;align-items:center;}
@@ -295,9 +351,9 @@
             <div class="dev">${deviceImg}</div>
             <div class="stat">${status}</div>
             <div class="nm">${esc(c.name || (ent?.attributes?.friendly_name ?? c.entity))}</div>
-            ${row(c.sensor_voltagem, "mdi:lightning-bolt", "V", "voltage")}
-            ${row(c.sensor_corrente, "mdi:current-ac", "A", "current")}
-            ${row(c.sensor_potencia, "mdi:flash", "W", "power")}
+            ${onlyPower ? "" : row(c.sensor_voltagem, "mdi:lightning-bolt", "V", "voltage")}
+            ${onlyPower ? "" : row(c.sensor_corrente, "mdi:current-ac", "A", "current")}
+            ${onlyPower ? bigPower() : row(c.sensor_potencia, "mdi:flash", "W", "power")}
           </div>
           ${protocol}
         </ha-card>`;
@@ -355,6 +411,10 @@
     sensor_voltagem: "Sensor de Voltagem",
     sensor_corrente: "Sensor de Corrente",
     sensor_potencia: "Sensor de Potência",
+    only_power: "Somente Potência (esconde corrente e tensão, número grande)",
+    power_font_size: "Tamanho da potência",
+    color_power_on: "Potência em destaque: ligado",
+    color_power_off: "Potência em destaque: desligado",
     animate: "Animar ícone quando ligado (girar)",
     control: "Permitir ligar/desligar (desative p/ geladeira etc.)",
     haptic: "Vibrar ao tocar (feedback táctil no celular)",
@@ -384,6 +444,7 @@
     "color_on_bg", "color_on_border", "color_on_name", "color_on_subtext",
     "color_off_bg", "color_off_border", "color_off_name", "color_off_subtext",
     "color_unavail_bg", "color_unavail_border", "color_unknown_bg", "color_unknown_border",
+    "color_power_on", "color_power_off",
   ];
   const parseColor = (str) => {
     const s = String(str || "").trim();
@@ -406,7 +467,12 @@
     }
     set hass(hass) {
       this._hass = hass;
-      if (this._form) this._form.hass = hass;
+      // o filtro dos selects depende do hass: sem reconstruir o esquema aqui,
+      // um hass que chegue depois do setConfig deixaria a lista sem filtro
+      if (this._form) {
+        this._form.hass = hass;
+        this._form.schema = this._schema(this._preset());
+      }
     }
 
     _preset() {
@@ -416,21 +482,36 @@
       return url ? "custom" : "none";
     }
 
-    // Sensores: prioriza entidades cujo object_id casa com o do switch
-    // (switch.tomada_do_rack_tv_01 → sensor.tomada_do_rack_tv_01_*).
-    _sensorSel() {
+    // Sensores da tomada selecionada, em cascata — nunca devolve lista vazia:
+    //   1) mesmo dispositivo do switch (registro de entidades do frontend)
+    //   2) object_id parecido (switch.tomada_do_rack_tv_01 → sensor.tomada_..._*)
+    //   3) todos os sensores
+    // Dentro do dispositivo, ainda filtra pela grandeza (device_class) quando
+    // a integração informa — mas só se sobrar alguma coisa.
+    _sensorSel(classes) {
+      const hass = this._hass;
       const ent = this._config?.entity;
-      if (ent && this._hass) {
+      if (!hass || !ent) return { entity: { domain: "sensor" } };
+      const isSensor = (id) => id.startsWith("sensor.") && hass.states[id];
+
+      const devId = hass.entities?.[ent]?.device_id;
+      let list = devId && hass.entities
+        ? Object.keys(hass.entities).filter((id) => hass.entities[id].device_id === devId && isSensor(id))
+        : [];
+      if (!list.length) {
         const base = ent.split(".")[1];
-        const list = Object.keys(this._hass.states)
-          .filter((e) => e.startsWith("sensor.") && e.split(".")[1].startsWith(base));
-        if (list.length) return { entity: { include_entities: list } };
+        list = Object.keys(hass.states).filter((id) => isSensor(id) && id.split(".")[1].startsWith(base));
       }
-      return { entity: { domain: "sensor" } };
+      if (!list.length) return { entity: { domain: "sensor" } };
+
+      const typed = classes
+        ? list.filter((id) => classes.includes(hass.states[id]?.attributes?.device_class))
+        : [];
+      return { entity: { include_entities: typed.length ? typed : list } };
     }
 
     _schema(preset) {
-      const sensorSel = this._sensorSel();
+      const onlyPower = this._config?.only_power === true;
       const s = [
         { name: "entity", required: true, selector: { entity: { domain: "switch" } } },
         { name: "name", selector: { text: {} } },
@@ -454,9 +535,21 @@
       if (preset === "custom") s.push({ name: "background_image_url", selector: { text: {} } });
       s.push(
         { name: "background_transparent", selector: { number: { min: 0, max: 1, step: 0.005, mode: "box" } } },
-        { name: "sensor_voltagem", selector: sensorSel },
-        { name: "sensor_corrente", selector: sensorSel },
-        { name: "sensor_potencia", selector: sensorSel },
+        { name: "only_power", selector: { boolean: {} } },
+      );
+      // com «Somente Potência» ligado, tensão e corrente não são desenhadas —
+      // não faz sentido continuar oferecendo os dois selects
+      if (!onlyPower) {
+        s.push(
+          { name: "sensor_voltagem", selector: this._sensorSel(["voltage"]) },
+          { name: "sensor_corrente", selector: this._sensorSel(["current"]) },
+        );
+      }
+      s.push(
+        { name: "sensor_potencia", selector: this._sensorSel(["power", "apparent_power"]) },
+        ...(onlyPower
+          ? [{ name: "power_font_size", selector: { number: { min: 12, max: 96, step: 1, mode: "box", unit_of_measurement: "px" } } }]
+          : []),
         { name: "paper_color", selector: { select: { mode: "dropdown", options: paperOptions() } } },
         { name: "animate", selector: { boolean: {} } },
         { name: "control", selector: { boolean: {} } },
@@ -560,6 +653,11 @@
       const clean = {};
       for (const [k, val] of Object.entries(v)) {
         if (k === "entity" || k === "name" || val !== DEFAULTS[k]) clean[k] = val;
+      }
+      // campo que o esquema escondeu (ex.: sensor de corrente com «Somente
+      // Potência» ligado) não aparece no `v` — sem isto ele sumiria do YAML
+      for (const [k, val] of Object.entries(this._config)) {
+        if (!(k in v) && !COLOR_FIELDS.includes(k) && clean[k] === undefined) clean[k] = val;
       }
       // cores vivem fora do ha-form — preservar as já configuradas
       for (const k of COLOR_FIELDS) {
