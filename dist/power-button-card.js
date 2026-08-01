@@ -28,11 +28,16 @@
     protocol_icon: "",
     protocol_color_on: null,
     protocol_color_off: null,
+    // deslocamento do selinho a partir do canto inferior direito: aumentar
+    // empurra para dentro do card (esquerda e cima); negativo joga para fora
+    protocol_offset_x: 10,
+    protocol_offset_y: 10,
     sensor_voltagem: "",
     sensor_corrente: "",
     sensor_potencia: "",
     only_power: false,
     power_font_size: 34,
+    only_power_lift: 6,       // px que o nome e a potência sobem no modo Somente Potência
     color_power_on: "#7a4b00",
     color_power_off: "#f0b429",
     color_on_bg: "rgba(255, 255, 255, 0.95)",
@@ -293,10 +298,22 @@
           ><span class="pv">${esc(value)}</span><span class="pu">${esc(unit)}</span></div>`;
       };
 
+      // subir nome e potência só no modo Somente Potência: sem as linhas de
+      // V/A o bloco fica baixo demais no card. transform em vez de margem —
+      // não mexe na grade, então o número não muda de tamanho ao subir.
+      const lift = Number(c.only_power_lift);
+      const liftCss = onlyPower && Number.isFinite(lift) && lift !== 0
+        ? `transform:translateY(${-lift}px);` : "";
+      const protoX = Number.isFinite(Number(c.protocol_offset_x)) ? Number(c.protocol_offset_x) : 10;
+      const protoY = Number.isFinite(Number(c.protocol_offset_y)) ? Number(c.protocol_offset_y) : 10;
+
       // --- protocol ---
       let protocol = "";
       if (c.protocol_icon) {
-        const pc = isOn ? "rgba(20, 20, 20, 0.72)" : (c.protocol_color_off || "rgba(255, 255, 255, 0.25)");
+        // cor própria quando informada; sem ela, o par do template original
+        const pc = isOn
+          ? (c.protocol_color_on || "rgba(20, 20, 20, 0.72)")
+          : (c.protocol_color_off || "rgba(255, 255, 255, 0.25)");
         const pf = isOn
           ? "drop-shadow( 1px  1px 0px rgba(255, 255, 255, 0.65)) drop-shadow(-1px -1px 1px rgba(0,   0,   0,   0.50))"
           : "none";
@@ -322,12 +339,12 @@
           .dev{grid-area:device_img;justify-self:start;align-self:start;position:relative;z-index:1;line-height:0;overflow:visible;}
           .stat{grid-area:status;align-self:start;justify-self:end;font-size:10px;font-weight:500;position:relative;z-index:1;}
           .nm{grid-area:n;font-weight:600;font-size:14px;color:${nameColor};align-self:center;justify-self:start;
-            padding-top:6px;padding-bottom:6px;white-space:normal;word-wrap:break-word;text-align:left;text-transform:none;position:relative;z-index:1;}
+            padding-top:6px;padding-bottom:6px;white-space:normal;word-wrap:break-word;text-align:left;text-transform:none;position:relative;z-index:1;${liftCss}}
           .row{padding-bottom:4px;align-self:center;justify-self:start;font-size:10px;font-weight:500;position:relative;z-index:1;
             display:inline-flex;align-items:center;gap:5px;}
           .row ha-icon{flex:none;line-height:0;display:flex;align-items:center;}
           .row.sensor{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-          .row.big{gap:6px;align-items:baseline;padding-bottom:2px;}
+          .row.big{gap:6px;align-items:baseline;padding-bottom:2px;${liftCss}}
           .row.big ha-icon{align-self:center;flex:none;
             filter:${isOn ? "drop-shadow(0 1px 0 rgba(255,255,255,0.55))" : "none"};}
           /* tabular-nums trava a largura do dígito: o número não dança a cada leitura */
@@ -336,7 +353,7 @@
             text-shadow:${isOn ? "0 1px 0 rgba(255,255,255,0.55)" : "none"};}
           .row.big .pu{font-size:${Math.round(pSize * 0.4)}px;font-weight:600;color:${powerColor};
             opacity:.72;letter-spacing:0;}
-          .proto{position:absolute;bottom:8px;right:8px;z-index:2;pointer-events:none;line-height:0;}
+          .proto{position:absolute;bottom:${protoY}px;right:${protoX}px;z-index:2;pointer-events:none;line-height:0;}
           span{font-size:12px;font-weight:500;line-height:1.4;}
           .tgl{display:inline-flex;align-items:center;}
           .tgl.live{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
@@ -413,6 +430,7 @@
     sensor_potencia: "Sensor de Potência",
     only_power: "Somente Potência (esconde corrente e tensão, número grande)",
     power_font_size: "Tamanho da potência",
+    only_power_lift: "Subir o nome e a potência",
     color_power_on: "Potência em destaque: ligado",
     color_power_off: "Potência em destaque: desligado",
     animate: "Animar ícone quando ligado (girar)",
@@ -423,6 +441,8 @@
     protocol_icon: "Protocolo",
     protocol_color_on: "Cor do protocolo (ligado)",
     protocol_color_off: "Cor do protocolo (desligado)",
+    protocol_offset_x: "Protocolo: distância da borda direita",
+    protocol_offset_y: "Protocolo: distância da borda inferior",
     paper_color: "Cor do papel (ligado)",
     color_on_bg: "Ligado: fundo",
     color_on_border: "Ligado: borda",
@@ -548,7 +568,10 @@
       s.push(
         { name: "sensor_potencia", selector: this._sensorSel(["power", "apparent_power"]) },
         ...(onlyPower
-          ? [{ name: "power_font_size", selector: { number: { min: 12, max: 96, step: 1, mode: "box", unit_of_measurement: "px" } } }]
+          ? [
+            { name: "power_font_size", selector: { number: { min: 12, max: 96, step: 1, mode: "box", unit_of_measurement: "px" } } },
+            { name: "only_power_lift", selector: { number: { min: -20, max: 60, step: 1, mode: "box", unit_of_measurement: "px" } } },
+          ]
           : []),
         { name: "paper_color", selector: { select: { mode: "dropdown", options: paperOptions() } } },
         { name: "animate", selector: { boolean: {} } },
@@ -573,6 +596,13 @@
             },
           },
         },
+        // posição do selinho: só faz sentido com um protocolo escolhido
+        ...(this._config?.protocol_icon
+          ? [
+            { name: "protocol_offset_x", selector: { number: { min: -20, max: 80, step: 1, mode: "box", unit_of_measurement: "px" } } },
+            { name: "protocol_offset_y", selector: { number: { min: -20, max: 80, step: 1, mode: "box", unit_of_measurement: "px" } } },
+          ]
+          : []),
       );
       return s;
     }
