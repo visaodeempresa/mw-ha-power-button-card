@@ -108,12 +108,27 @@ desligado); preenchidas na seção **Cores**, mandam elas.
 Interações: **hold** = more-info da tomada · toque nas linhas V/A/W (ou no
 número grande) = more-info do sensor · toggle liga/desliga.
 
+### Tomada offline
+
+Quando a tomada cai, os sensores dela caem junto — e o card mostrava
+`unavailable` no lugar de cada leitura (em 34 px, no modo Somente Potência).
+Agora V, A e W viram **travessão** (`—`, sem unidade pendurada): o selo
+**OFFLINE** no topo já diz o que aconteceu, e a linha continua ocupando o
+lugar dela na grade, então o card não muda de forma quando o aparelho volta.
+O travessão vale por sensor — um sensor caído sozinho não apaga os outros dois.
+
+A **marca d'água** e o **selinho de protocolo** continuam desenhados quando
+estão configurados, e agora legíveis: sobre o fundo vinho do estado offline a
+marca ganha `brightness(1.8)` junto do cinza (sem isso ela sumia), e o selinho
+sobe de 25% para 45% de branco. `protocol_color_off`, quando preenchida, manda
+também no offline.
+
 ## Desenvolvimento
 
 ```bash
 node --check dist/power-button-card.js && node tools/probe.js
 ```
 
-O probe instancia card e editor fora do navegador (24 verificações: grade,
-formatação da potência, filtro dos selects, defaults fora do YAML) e roda no
-CI antes de qualquer release.
+O probe instancia card e editor fora do navegador (47 verificações: grade,
+formatação da potência, filtro dos selects, defaults fora do YAML, estado
+offline) e roda no CI antes de qualquer release.

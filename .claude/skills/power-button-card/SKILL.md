@@ -69,5 +69,8 @@ e o banner nunca teve o `v`, então era no-op silencioso).
 | Selinho de protocolo colado no canto | `protocol_offset_x`/`_y` medem a distância até a borda direita/inferior: **aumentar empurra para dentro** |
 | Nome/potência baixos no Somente Potência | `only_power_lift` (6 px por padrão) sobe os dois; é `transform`, não margem |
 | Potência estourando a largura | acima de 9999 tem que subir de degrau (W → kW), não esticar |
+| "unavailable" escrito no card | sensor caído junto com a tomada — `noReading()` troca por `—`; se voltar a aparecer, alguém mexeu no `row()`/`bigPower()` |
+| Marca d'água some com a tomada offline | `grayscale(100%)` puro sobre o fundo vinho não tem contraste — precisa do `brightness(1.8)` junto (mesmo tratamento do desligado) |
+| Selinho de protocolo invisível offline | branco a 25% (fallback do desligado) morre no vinho — offline usa 45% |
 
 Commits: inglês, assinados em GPG, autoria exclusiva do dono, sem coautoria.

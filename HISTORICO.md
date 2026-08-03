@@ -1,5 +1,22 @@
 # HISTÓRICO — mw-ha-power-button-card
 
+## 2026-08-02 — tomada offline com cara de tomada (feature/offline-readings-and-branding)
+- Sintoma: com a tomada caída, o card escrevia `unavailable` no lugar de cada
+  leitura — em 34 px no modo Somente Potência — e a identidade do aparelho
+  (marca d'água + selinho) sumia no fundo vinho do estado offline.
+- `noReading()` (`unavailable`/`unknown`/`none`/vazio/nulo) troca o valor por
+  travessão `—`, **por sensor**: um sensor caído sozinho não apaga os outros.
+  No número grande, a unidade também some — "— W" sugere um valor que não há.
+  A linha continua ocupando o lugar na grade, então o card não muda de forma
+  quando o aparelho volta.
+- Marca d'água offline: `grayscale(100%)` + `brightness(1.8)` (o mesmo
+  tratamento do desligado). Só o cinza puro não tinha contraste nenhum contra
+  `color_unavail_bg` (vinho escuro) e a logo simplesmente não aparecia.
+- Selinho de protocolo offline: fallback de branco 25% → 45%.
+  `protocol_color_off` preenchida continua mandando, inclusive offline.
+- Nenhuma propriedade nova: nada muda no YAML de quem já usa o card.
+- Probe: 11 checks novos de estado offline (47 no total).
+
 ## 2026-07-31 — bloco `touch-feedback v1` (compartilhado)
 - `haptic()` + `confirmAction()` saíram de código solto e viraram bloco entre
   marcadores `>>> touch-feedback v1` / `<<< touch-feedback v1`, mesmo regime da
