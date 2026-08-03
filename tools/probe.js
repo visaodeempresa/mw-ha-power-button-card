@@ -202,6 +202,46 @@ protoOff.hass = { ...hass, states: { ...hass.states, "switch.tomada_rack": { sta
 check("cor do protocolo desligada continua valendo",
   protoOff.shadowRoot.innerHTML.includes("#90caf9"));
 
+console.log("offline (tomada caída):");
+const deadStates = {
+  ...hass.states,
+  "switch.tomada_rack": { state: "unavailable", attributes: { friendly_name: "TOMADA DO RACK" } },
+  "sensor.tomada_rack_voltagem": { state: "unavailable", attributes: { device_class: "voltage" } },
+  "sensor.tomada_rack_corrente": { state: "unknown", attributes: { device_class: "current" } },
+  "sensor.tomada_rack_potencia": { state: "unavailable", attributes: { device_class: "power" } },
+};
+const mkDead = (cfg) => {
+  const el = new reg["power-button-card"]();
+  el.setConfig(cfg);
+  el.hass = { ...hass, states: deadStates };
+  return el.shadowRoot.innerHTML;
+};
+const deadFull = mkDead({ ...base, background_image_url: "https://x/tuya.png", protocol_icon: "mdi:wifi" });
+check("nenhum 'unavailable' na cara do card", !deadFull.includes("unavailable</span>") &&
+  !/>\s*unavailable/.test(deadFull), deadFull.slice(deadFull.indexOf("<div class=\"grid\"")));
+check("nenhum 'unknown' na cara do card", !/>\s*unknown/.test(deadFull));
+check("V/A/W viram travessão", (deadFull.match(/—/g) || []).length === 3);
+check("selo OFFLINE continua", deadFull.includes("OFFLINE"));
+check("marca d'água clareada p/ aparecer no fundo escuro",
+  deadFull.includes("filter:grayscale(100%) brightness(1.8);"));
+check("selinho de protocolo visível offline", deadFull.includes("rgba(255, 255, 255, 0.45)"));
+check("cor do protocolo do dono vale offline",
+  mkDead({ ...base, protocol_icon: "mdi:wifi", protocol_color_off: "#90caf9" }).includes("#90caf9"));
+
+const deadOnly = mkDead({ ...base, only_power: true, background_image_url: "https://x/tuya.png" });
+check("potência grande vira travessão", deadOnly.includes('class="pv">—<'),
+  deadOnly.slice(deadOnly.indexOf("row big")));
+check("travessão sem unidade pendurada", deadOnly.includes('class="pu"></span>'));
+check("marca d'água presente no Somente Potência", deadOnly.includes("https://x/tuya.png"));
+
+const halfDead = new reg["power-button-card"]();
+halfDead.setConfig(base);
+halfDead.hass = { ...hass, states: { ...hass.states,
+  "sensor.tomada_rack_corrente": { state: "unavailable", attributes: {} } } };
+check("sensor caído sozinho não apaga os outros",
+  halfDead.shadowRoot.innerHTML.includes("127.4 V") &&
+  (halfDead.shadowRoot.innerHTML.match(/—/g) || []).length === 1);
+
 const edFine = new reg["power-button-card-editor"]();
 edFine.hass = hass;
 edFine.setConfig({ ...base, only_power: true, protocol_icon: "mdi:zigbee" });

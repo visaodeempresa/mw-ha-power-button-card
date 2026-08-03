@@ -55,6 +55,14 @@
     paper_color: "paper",
   };
 
+  // Leitura morta: o sensor existe mas não tem valor (a tomada caiu e levou
+  // junto os sensores dela). Escrever "unavailable" em 34px é feio e não
+  // informa nada — o selo OFFLINE no topo já contou o que houve. Fica o
+  // travessão, que ainda segura a linha no lugar na grade.
+  const NO_READING = "—";
+  const noReading = (s) => s === undefined || s === null || s === "" ||
+    s === "unavailable" || s === "unknown" || s === "none";
+
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -236,7 +244,11 @@
       let watermark = "";
       if (c.background_image_url) {
         const alpha = c.background_transparent ?? 0.12;
-        const wmFilter = dead ? "filter:grayscale(100%);" : isOff ? "filter:grayscale(40%) brightness(1.8);" : "";
+        // offline sem o brightness some: o fundo do card fica vinho escuro e a
+        // marca d'água em cinza puro não tem contraste nenhum contra ele. A
+        // marca é identidade do aparelho — tem que continuar legível caído.
+        const wmFilter = dead ? "filter:grayscale(100%) brightness(1.8);"
+          : isOff ? "filter:grayscale(40%) brightness(1.8);" : "";
         watermark = `<div class="wm" style="background-image:url('${esc(c.background_image_url)}');opacity:${alpha};${wmFilter}"></div>`;
       }
 
@@ -282,8 +294,10 @@
         if (!st) return `<div class="row" style="grid-area:${area}"></div>`;
         const ic = isOn ? subOn : "gold";
         const tc = isOn ? subOn : subOff;
+        // sem leitura, some também a unidade: "— V" sugere um valor que não existe
+        const text = noReading(st.state) ? NO_READING : `${esc(st.state)} ${unit}`;
         return `<div class="row sensor" style="grid-area:${area}" data-entity="${esc(sensorId)}">
-          <ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;color:${ic};"></ha-icon><span style="color:${tc};">${esc(st.state)} ${unit}</span></div>`;
+          <ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;color:${ic};"></ha-icon><span style="color:${tc};">${text}</span></div>`;
       };
 
       // only_power: some com corrente/tensão e a potência vira o número grande
@@ -291,8 +305,11 @@
         const st = this._st(c.sensor_potencia);
         if (!st) return `<div class="row" style="grid-area:power"></div>`;
         const isz = Math.round(pSize * 0.62);
-        const { value, unit } = fmtPower(st.state, st.attributes?.unit_of_measurement,
-          this._hass?.locale?.language);
+        const dash = noReading(st.state);
+        const { value, unit } = dash
+          ? { value: NO_READING, unit: "" }
+          : fmtPower(st.state, st.attributes?.unit_of_measurement,
+            this._hass?.locale?.language);
         return `<div class="row big sensor" style="grid-area:power" data-entity="${esc(c.sensor_potencia)}">
           <ha-icon icon="mdi:flash" style="--mdc-icon-size:${isz}px;width:${isz}px;height:${isz}px;color:${powerColor};"></ha-icon
           ><span class="pv">${esc(value)}</span><span class="pu">${esc(unit)}</span></div>`;
@@ -310,10 +327,14 @@
       // --- protocol ---
       let protocol = "";
       if (c.protocol_icon) {
-        // cor própria quando informada; sem ela, o par do template original
+        // cor própria quando informada; sem ela, o par do template original.
+        // Caído, o fundo é vinho escuro e o branco a 25% do desligado quase
+        // não aparece — o selinho sobe para 45% para continuar visível.
         const pc = isOn
           ? (c.protocol_color_on || "rgba(20, 20, 20, 0.72)")
-          : (c.protocol_color_off || "rgba(255, 255, 255, 0.25)");
+          : dead
+            ? (c.protocol_color_off || "rgba(255, 255, 255, 0.45)")
+            : (c.protocol_color_off || "rgba(255, 255, 255, 0.25)");
         const pf = isOn
           ? "drop-shadow( 1px  1px 0px rgba(255, 255, 255, 0.65)) drop-shadow(-1px -1px 1px rgba(0,   0,   0,   0.50))"
           : "none";
