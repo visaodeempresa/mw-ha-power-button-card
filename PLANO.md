@@ -22,8 +22,9 @@ sensor_voltagem/corrente/potencia (só sensor, default em branco) ·
 color_on_{bg,border,name,subtext} · color_off_{bg,border,name,subtext} ·
 color_unavail_{bg,border} · color_unknown_{bg,border}
 
-URLs dos presets (da tela do dono):
-- Tuya: https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tuya.png
+URLs dos presets (site da marca; o endereço `raw.githubusercontent.com/...`
+usado até a v0.6.0 é reescrito para estes ao ler a configuração):
+- Tuya: https://mayconsoftware.github.io/assets/devices/ha-integration/ha-integration-tuya.png
 - Tapo: idem com `-tapo.png`
 
 ## Checklist (status vivo)

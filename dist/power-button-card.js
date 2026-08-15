@@ -8,9 +8,27 @@
 (() => {
   "use strict";
 
+  // Marcas d'água servidas pelo site (mesmo host da logo da marca), não mais
+  // pelo raw.githubusercontent — que responde `text/plain` sem CDN de imagem.
   const PRESET_URLS = {
-    tuya: "https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tuya.png",
-    tapo: "https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tapo.png",
+    tuya: "https://mayconsoftware.github.io/assets/devices/ha-integration/ha-integration-tuya.png",
+    tapo: "https://mayconsoftware.github.io/assets/devices/ha-integration/ha-integration-tapo.png",
+  };
+
+  // Endereços antigos gravados no YAML de quem já usa o card. Continuam
+  // servindo a mesma imagem, mas são reescritos para o endereço novo ao ler a
+  // configuração — sem isso o editor mostraria «Custom» num card que o dono
+  // configurou como Tuya/Tapo, e a tela ficaria presa no host antigo.
+  const LEGACY_PRESET_URLS = {
+    "https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tuya.png": PRESET_URLS.tuya,
+    "https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tapo.png": PRESET_URLS.tapo,
+  };
+
+  // Só troca o que é preset conhecido; URL de terceiro (Custom) passa intacta.
+  const migrateBg = (config) => {
+    const url = config?.background_image_url;
+    const next = url && LEGACY_PRESET_URLS[url];
+    return next ? { ...config, background_image_url: next } : config;
   };
 
   // Defaults = variables do template original (fidelidade total)
@@ -192,7 +210,7 @@
       if (!config || !config.entity) {
         throw new Error("power-button-card: defina a propriedade 'entity' (switch)");
       }
-      this._config = { ...DEFAULTS, ...config };
+      this._config = { ...DEFAULTS, ...migrateBg(config) };
       this._renderKey = null;
       if (this._hass) this._render();
     }
@@ -503,7 +521,7 @@
 
   class PowerButtonCardEditor extends HTMLElement {
     setConfig(config) {
-      this._config = { ...config };
+      this._config = { ...migrateBg(config) };
       this._renderForm();
     }
     set hass(hass) {

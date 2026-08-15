@@ -29,7 +29,7 @@ type: custom:power-button-card
 entity: switch.microondas_microondas
 name: MICROONDAS
 device_icon: mdi:microwave
-background_image_url: https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration/ha-integration-tuya.png
+background_image_url: https://mayconsoftware.github.io/assets/devices/ha-integration/ha-integration-tuya.png
 background_transparent: 0.08
 sensor_voltagem: sensor.microondas_voltagem
 sensor_corrente: sensor.microondas_corrente
