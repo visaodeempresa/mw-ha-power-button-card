@@ -1,5 +1,18 @@
 # HISTÓRICO — mw-ha-power-button-card
 
+## 2026-08-15 — presets Tuya/Tapo servidos pelo site (feature/preset-urls-pages)
+- Escolher **Tuya** ou **Tapo** no editor agora grava
+  `https://mayconsoftware.github.io/assets/devices/ha-integration/ha-integration-{tuya,tapo}.png`
+  — mesmo host da logo da marca (regra global 70), em vez do
+  `raw.githubusercontent.com/...` que servia a imagem como `text/plain`.
+- **Nada quebra para quem já usa**: `migrateBg()` reescreve os dois endereços
+  antigos para os novos ao ler a configuração, no card e no editor. Sem isso o
+  editor mostraria «Custom» num card que o dono configurou como Tuya e a tela
+  ficaria presa no host antigo. URL de terceiro (Custom) passa intacta.
+- A migração é só em memória: o YAML salvo só muda quando o dono mexer no
+  card — abrir o editor não reescreve dashboard nenhum sozinho.
+- Nenhuma propriedade nova. Probe: 9 checks novos (56 no total).
+
 ## 2026-08-02 — tomada offline com cara de tomada (feature/offline-readings-and-branding)
 - Sintoma: com a tomada caída, o card escrevia `unavailable` no lugar de cada
   leitura — em 34 px no modo Somente Potência — e a identidade do aparelho

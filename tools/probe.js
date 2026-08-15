@@ -257,5 +257,37 @@ check("sem protocolo, sem campos de deslocamento",
 check("sem only_power, sem campo de subida",
   !byName(edNoProto._schema("none"), "only_power_lift"));
 
+// --- marca d'água: endereços do site + migração dos endereços antigos ---
+const PAGES = "https://mayconsoftware.github.io/assets/devices/ha-integration";
+const RAW = "https://raw.githubusercontent.com/mayconsoftware/mayconsoftware.github.io/refs/heads/main/assets/devices/ha-integration";
+const src = fs.readFileSync(path.join(__dirname, "..", "dist", "power-button-card.js"), "utf8");
+check("preset Tuya aponta para o site", src.includes(`${PAGES}/ha-integration-tuya.png`));
+check("preset Tapo aponta para o site", src.includes(`${PAGES}/ha-integration-tapo.png`));
+
+for (const marca of ["tuya", "tapo"]) {
+  const velho = `${RAW}/ha-integration-${marca}.png`;
+  const novo = `${PAGES}/ha-integration-${marca}.png`;
+
+  const cardVelho = new reg["power-button-card"]();
+  cardVelho.setConfig({ ...base, background_image_url: velho });
+  cardVelho.hass = hass;
+  const html = cardVelho.shadowRoot.innerHTML;
+  check(`card com URL antiga de ${marca} desenha a do site`,
+    html.includes(novo) && !html.includes(velho));
+
+  const edVelho = new reg["power-button-card-editor"]();
+  edVelho.hass = hass;
+  edVelho.setConfig({ ...base, background_image_url: velho });
+  check(`editor reconhece a URL antiga de ${marca} como preset`,
+    edVelho._preset() === marca);
+}
+
+const urlDeTerceiro = "https://exemplo.invalido/minha-marca.png";
+const edCustom = new reg["power-button-card-editor"]();
+edCustom.hass = hass;
+edCustom.setConfig({ ...base, background_image_url: urlDeTerceiro });
+check("URL de terceiro passa intacta (Custom)",
+  edCustom._preset() === "custom" && edCustom._config.background_image_url === urlDeTerceiro);
+
 console.log(fails ? `\n${fails} verificação(ões) falharam` : "\ntudo ok");
 process.exit(fails ? 1 : 0);
