@@ -228,6 +228,8 @@
     }
 
     getCardSize() { return 3; }
+    getLayoutOptions() { return { grid_rows: "auto", grid_columns: "auto", grid_min_rows: 1, grid_min_columns: 1 }; }
+    getGridOptions() { return { rows: "auto", columns: "auto", min_rows: 1, min_columns: 1 }; }
 
     static getConfigElement() { return document.createElement("power-button-card-editor"); }
 
@@ -362,9 +364,11 @@
       if (!this.shadowRoot) this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `
         <style>
+          :host{display:block !important;aspect-ratio:1/1 !important;width:100% !important;box-sizing:border-box !important;}
           ha-card{font-family:'Graphik',sans-serif;position:relative;overflow:visible;
             border-radius:18px;padding:10%;font-size:16px;text-transform:uppercase;
-            background:${bg};border:1px solid ${border};box-shadow:${shadow};height:100%;box-sizing:border-box;cursor:default;}
+            background:${bg};border:1px solid ${border};box-shadow:${shadow};
+            aspect-ratio:1/1 !important;height:100% !important;max-height:100% !important;width:100% !important;box-sizing:border-box !important;cursor:default;}
           .grid{display:grid;position:relative;height:100%;
             grid-template-areas:${onlyPower
               ? '"device_img status" "n n" "power power"'
@@ -751,5 +755,5 @@
     documentationURL: "https://github.com/visaodeempresa/mw-ha-power-button-card",
   });
 
-  console.info("%c MW-POWER-BUTTON-CARD %c 0.7.0 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
+  console.info("%c MW-POWER-BUTTON-CARD %c 0.7.1 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
 })();
