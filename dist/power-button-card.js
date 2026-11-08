@@ -228,6 +228,8 @@
     }
 
     getCardSize() { return 3; }
+    getLayoutOptions() { return { grid_rows: "auto", grid_columns: "auto", grid_min_rows: 1, grid_min_columns: 1 }; }
+    getGridOptions() { return { rows: "auto", columns: "auto", min_rows: 1, min_columns: 1 }; }
 
     static getConfigElement() { return document.createElement("power-button-card-editor"); }
 
@@ -284,11 +286,16 @@
         deviceImg = `<ha-icon icon="${esc(c.device_icon)}" style="--mdc-icon-size:42px;width:42px;height:42px;color:${ic};display:flex;${anim}${opac}${f}transition:opacity .3s ease,color .3s ease;"></ha-icon>`;
       }
 
+      // escala do modo leituras (explicada no readsCss, mais abaixo)
+      const readsMode = c.only_power !== true;
+      const READ_REF = 176;
+      const k = (px) => `min(${px}px,${+(px * 100 / READ_REF).toFixed(3)}cqw)`;
+
       // --- status (toggle / offline / desconhecido) ---
       let status;
       if (isOn || isOff) {
         const canControl = c.control !== false;
-        const knobLeft = isOn ? "26px" : "2px";
+        const knobLeft = readsMode ? k(isOn ? 26 : 2) : (isOn ? "26px" : "2px");
         if (!canControl) {
           status = `<div class="tgl locked"><div class="track" style="background:${isOn ? "rgba(0,180,0,0.4)" : "rgba(100,100,100,0.4)"}"><div class="knob" style="left:${knobLeft};background:rgba(200,200,200,0.6);"></div></div></div>`;
         } else {
@@ -359,12 +366,33 @@
         protocol = `<ha-icon class="proto" icon="${esc(c.protocol_icon)}" style="width:22px;height:22px;color:${pc};filter:${pf};"></ha-icon>`;
       }
 
+      // modo leituras (V/A/W): tudo aqui dentro é px fixo e o card encolhe com a
+      // coluna. Desenhado para ~176 px (o preview do editor); num card de 136–150 px
+      // as 3 linhas comem a altura, descem para a base e encostam no selo do
+      // protocolo. Abaixo de READ_REF tudo escala junto (min(px, cqw) com o próprio
+      // card como container); de READ_REF para cima nada muda. O Somente Potência
+      // não entra aqui — já cabe e é o visual aprovado.
+      const readsCss = onlyPower ? "" : `
+          :host{container-type:inline-size;}
+          ha-card.reads .nm{font-size:${k(14)};padding-top:${k(6)};padding-bottom:${k(6)};}
+          ha-card.reads .stat{font-size:${k(10)};}
+          ha-card.reads .row{padding-bottom:${k(4)};gap:${k(5)};}
+          ha-card.reads .row span{font-size:${k(12)};}
+          ha-card.reads .row ha-icon{--mdc-icon-size:${k(14)} !important;width:${k(14)} !important;height:${k(14)} !important;}
+          ha-card.reads .dev > *{--mdc-icon-size:${k(42)} !important;width:${k(42)} !important;height:${k(42)} !important;}
+          ha-card.reads .track{width:${k(48)};height:${k(24)};border-radius:${k(12)};}
+          ha-card.reads .knob{width:${k(20)};height:${k(20)};top:${k(2)};}
+          ha-card.reads .proto{width:${k(22)} !important;height:${k(22)} !important;--mdc-icon-size:${k(22)};
+            bottom:${k(protoY)};right:${k(protoX)};}`;
+
       if (!this.shadowRoot) this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `
         <style>
+          :host{display:block !important;aspect-ratio:1/1 !important;width:100% !important;box-sizing:border-box !important;}
           ha-card{font-family:'Graphik',sans-serif;position:relative;overflow:visible;
             border-radius:18px;padding:10%;font-size:16px;text-transform:uppercase;
-            background:${bg};border:1px solid ${border};box-shadow:${shadow};height:100%;box-sizing:border-box;cursor:default;}
+            background:${bg};border:1px solid ${border};box-shadow:${shadow};
+            aspect-ratio:1/1 !important;height:100% !important;max-height:100% !important;width:100% !important;box-sizing:border-box !important;cursor:default;}
           .grid{display:grid;position:relative;height:100%;
             grid-template-areas:${onlyPower
               ? '"device_img status" "n n" "power power"'
@@ -399,9 +427,9 @@
           .tgl.locked{cursor:not-allowed;opacity:0.35;}
           .track{width:48px;height:24px;border-radius:12px;position:relative;transition:background .3s;pointer-events:none;}
           .knob{width:20px;height:20px;border-radius:50%;position:absolute;top:2px;transition:left .3s;pointer-events:none;}
-          @keyframes pbc-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+          @keyframes pbc-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}${readsCss}
         </style>
-        <ha-card>
+        <ha-card class="${onlyPower ? "" : "reads"}">
           ${watermark}
           <div class="grid">
             <div class="dev">${deviceImg}</div>
@@ -751,5 +779,5 @@
     documentationURL: "https://github.com/visaodeempresa/mw-ha-power-button-card",
   });
 
-  console.info("%c MW-POWER-BUTTON-CARD %c 0.7.0 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
+  console.info("%c MW-POWER-BUTTON-CARD %c 0.7.1 ", "background:#1a1a1a;color:#fdfaf3;font-weight:700;", "background:#e8e3d8;color:#1a1a1a;font-weight:700;");
 })();
