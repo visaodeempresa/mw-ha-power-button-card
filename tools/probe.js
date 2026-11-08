@@ -99,6 +99,12 @@ check("corrente e tensão somem", !only.includes("127.4") && !only.includes("0.4
 check("potência com 1 casa decimal (pt-BR)", only.includes(">1234,6<"), only.slice(-400));
 check("unidade separada do número", only.includes('class="pu">W<'));
 check("fonte grande no padrão (34px)", only.includes("font-size:34px"));
+// modo leituras escala abaixo de 176 px (card pequeno no dashboard: V/A/W desciam para a base)
+check("leituras: card é container e escala por cqw", full.includes("container-type:inline-size") &&
+  full.includes('class="reads"') && full.includes("font-size:min(14px,7.955cqw)") && full.includes("font-size:min(12px,6.818cqw)"));
+check("leituras: toggle escala junto", full.includes("width:min(48px,27.273cqw)") &&
+  (full.includes("left:min(2px,1.136cqw)") || full.includes("left:min(26px,14.773cqw)")));
+check("somente potência: nada muda (sem cqw)", !only.includes("cqw") && !only.includes("container-type"));
 check("cor de destaque ligada", only.includes("#7a4b00"));
 check("tabular-nums (número não dança)", only.includes("tabular-nums"));
 
